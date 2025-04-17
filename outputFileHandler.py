@@ -1,61 +1,51 @@
-import json
-from datetime import datetime
+import java.util.*;
 
-import xlsxwriter as xls
+public class SimilaritySearch {
 
-from answer_similarity import SimilarityComparitor
+    // Method to calculate term frequency (TF)
+    public static Map<String, Integer> getTermFrequency(String text) {
+        Map<String, Integer> frequencyMap = new HashMap<>();
+        for (String word : text.toLowerCase().split("\\s+")) {
+            frequencyMap.put(word, frequencyMap.getOrDefault(word, 0) + 1);
+        }
+        return frequencyMap;
+    }
 
+    // Method to calculate cosine similarity
+    public static double cosineSimilarity(Map<String, Integer> vec1, Map<String, Integer> vec2) {
+        Set<String> allWords = new HashSet<>();
+        allWords.addAll(vec1.keySet());
+        allWords.addAll(vec2.keySet());
 
-# from testDriver import expected_result
+        double dotProduct = 0.0;
+        double normVec1 = 0.0;
+        double normVec2 = 0.0;
 
-#this class creates an output file, each row has following 4 columns
-#test case no
-#question
-#Response
-#response time
-#Expected result
+        for (String word : allWords) {
+            int val1 = vec1.getOrDefault(word, 0);
+            int val2 = vec2.getOrDefault(word, 0);
 
-class OutputFileHandler:
-#Constructer -
-#output_file - The location of output file
-    def __init__(self, output_file):
-        self.output_file = output_file
-        self.workbook = xls.Workbook(output_file,options={'nan_inf_to_errors': True})#create file based on output_location. # ability to handle null data for expected result
-        self.worksheet=self.workbook.add_worksheet("test")#create sheet in the xls file
-        #next steps will write header entry on row 0
-        self.worksheet.write(0, 0, "#")           # -- firstrow first column (row,column,data)
-        self.worksheet.write(0, 1, "Question")    #-- firstrow second column
-        self.worksheet.write(0, 2, "Expected Result")
-        self.worksheet.write(0, 3, "Answer")
-        self.worksheet.write(0, 4, "Response Time in Sec")
-        # self.worksheet.write(0, 5, "Similarity Percentage")
-        # self.worksheet.write(0, 4, "Expected Result")
+            dotProduct += val1 * val2;
+            normVec1 += val1 * val1;
+            normVec2 += val2 * val2;
+        }
 
-    def write_line(self,row_number, question, expected_result, answer, response_item):
-#    def write_line(self,row_number, question, expected_result, answer, response_item,similarity_percentage):
-        self.worksheet.write(row_number, 0, row_number)
-        self.worksheet.write(row_number, 1,question)
+        return (normVec1 == 0 || normVec2 == 0) ? 0.0 : dotProduct / (Math.sqrt(normVec1) * Math.sqrt(normVec2));
+    }
 
-        self.worksheet.write(row_number, 2, expected_result)
-        self.worksheet.write(row_number, 3, answer)
-        self.worksheet.write(row_number, 4, response_item)
-        # self.worksheet.write(row_number, 5, similarity_percentage)
+    public static void main(String[] args) {
+        String doc1 = "AI can assist in software development and testing";
+        String doc2 = "Software testing and AI can work together";
+        String doc3 = "Nature and wildlife photography is amazing";
 
-    def closeFile(self):
-        self.workbook.close()
+        Map<String, Integer> tf1 = getTermFrequency(doc1);
+        Map<String, Integer> tf2 = getTermFrequency(doc2);
+        Map<String, Integer> tf3 = getTermFrequency(doc3);
 
+        double similarity1 = cosineSimilarity(tf1, tf2);
+        double similarity2 = cosineSimilarity(tf1, tf3);
 
-
-    def parse_response(self, response):
-        # print('-------------------- Raw response start --------------------')
-        # print(response.text)
-        # print('-------------------- Raw response end --------------------')
-        response_lines = response.text.splitlines()#list of strings of response
-        for line in response_lines:
-            if "chat_history" in line:
-                # removes the 'data: ' from begging of response so that we get a valid json
-                json_object = json.loads(line.replace("data: ", ""))
-                #JSOS is loaded into dictionary by json library, access the 'answer' from dictionary
-                answer = json_object["chat_history"][0].get("answer")
-                print(answer)
-                return answer
+        System.out.println("Similarity between doc1 and doc2: " + similarity1);
+        System.out.println("Similarity between doc1 and doc3: " + similarity2);
+    }
+}
